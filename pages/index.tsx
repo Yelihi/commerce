@@ -1,11 +1,33 @@
+import { useState, useRef, useEffect } from 'react'
 import Head from 'next/head'
 import Image from 'next/image'
 import { Inter } from '@next/font/google'
-import styles from '@/styles/Home.module.css'
+import styles from '../styles/Home.module.css'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export default function Home() {
+  const [products, setProducts] = useState<
+    { id: string; properties: { id: string }[] }[]
+  >([])
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    fetch('/api/get-items')
+      .then((res) => res.json())
+      .then((data) => setProducts(data.items))
+  }, [])
+
+  const handleClick = () => {
+    if (inputRef.current == null || inputRef.current.value == '') {
+      alert('name을 넣어주세요')
+      return
+    }
+    fetch(`/api/add-item?name=${inputRef.current.value}`)
+      .then((res) => res.json())
+      .then((data) => alert(data.message))
+  }
+
   return (
     <>
       <Head>
@@ -20,22 +42,33 @@ export default function Home() {
             Get started by editing&nbsp;
             <code className={styles.code}>pages/index.tsx</code>
           </p>
+
+          <input ref={inputRef} type="text" placeholder="name" />
+          <button onClick={handleClick}>Add Jacket</button>
+
           <div>
-            <a
-              href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              By{' '}
-              <Image
-                src="/vercel.svg"
-                alt="Vercel Logo"
-                className={styles.vercelLogo}
-                width={100}
-                height={24}
-                priority
-              />
-            </a>
+            <p>Product List</p>
+            {products &&
+              products.map((items) => (
+                <div key={items.id}>
+                  {JSON.stringify(items)}
+                  {items.properties &&
+                    Object.entries(items.properties).map(([elem, value]) => (
+                      <button
+                        key={elem}
+                        onClick={() => {
+                          fetch(
+                            `/api/get-detail?pageId=${items.id}&propertyId=${value.id}`
+                          )
+                            .then((res) => res.json())
+                            .then((data) => alert(JSON.stringify(data.detail)))
+                        }}
+                      >
+                        {elem}
+                      </button>
+                    ))}
+                </div>
+              ))}
           </div>
         </div>
 
